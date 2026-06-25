@@ -14,6 +14,7 @@ window.App = window.App || {};
   var drag = null;        // active drag state
   var preview = null;     // transient SVG element while creating
   var activeEditor = null;// inline <textarea> for text
+  var activeCapture = null;// { svg, pointerId } during a move/resize gesture
 
   var MIN_SIZE = 3;       // ignore accidental micro-shapes (page units)
 
@@ -214,6 +215,7 @@ window.App = window.App || {};
     if (handleNode && selId) {
       var ann = store.getAnnotation(selId);
       if (ann) {
+        capturePointer(e, record);
         startResize(ann, record, pt, handleNode.getAttribute("data-handle"));
         return;
       }
@@ -222,11 +224,37 @@ window.App = window.App || {};
     var annNode = e.target.closest ? e.target.closest("g.annot") : null;
     if (annNode) {
       var id = annNode.getAttribute("data-id");
+      // Capture the pointer on the stable <svg> BEFORE re-rendering. Selecting
+      // rebuilds the overlay's children (removing the element we pressed on),
+      // which would otherwise strand the drag gesture on touch/pen devices.
+      capturePointer(e, record);
       store.setSelected(id);
       var a = store.getAnnotation(id);
       startMove(a, record, pt);
     } else {
       store.setSelected(null);
+    }
+  }
+
+  // Capture the active pointer on the page's SVG overlay so move/resize keep
+  // receiving events even as annotation nodes are re-rendered mid-drag.
+  function capturePointer(e, record) {
+    try {
+      if (e.pointerId != null && record.svg.setPointerCapture) {
+        record.svg.setPointerCapture(e.pointerId);
+      }
+      activeCapture = { svg: record.svg, pointerId: e.pointerId };
+    } catch (_) {
+      activeCapture = null;
+    }
+  }
+
+  function releasePointer() {
+    if (activeCapture) {
+      try {
+        activeCapture.svg.releasePointerCapture(activeCapture.pointerId);
+      } catch (_) {}
+      activeCapture = null;
     }
   }
 
@@ -317,6 +345,7 @@ window.App = window.App || {};
   function onSelectUp() {
     window.removeEventListener("pointermove", onSelectMove);
     window.removeEventListener("pointerup", onSelectUp);
+    releasePointer();
     if (drag && !drag.changed) {
       store.cancelHistory(); // nothing moved; drop the snapshot
     }
