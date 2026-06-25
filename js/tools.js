@@ -40,6 +40,12 @@ window.App = window.App || {};
     if (e.button !== 0) return;
     if (activeEditor) { commitEditor(); }
 
+    // Prevent the browser's default mousedown behaviour. Without this, the
+    // default action (a) steals focus from the inline text editor we are about
+    // to create — instantly blurring/destroying it — and (b) starts a native
+    // text/drag selection that interferes with click-to-select and drag-to-move.
+    e.preventDefault();
+
     var tool = store.settings.tool;
     var pt = App.renderer.clientToPage(record.svg, e.clientX, e.clientY);
 
@@ -353,7 +359,6 @@ window.App = window.App || {};
     ta.style.lineHeight = "1.25";
 
     record.wrapper.appendChild(ta);
-    ta.focus();
 
     activeEditor = {
       ta: ta,
@@ -361,6 +366,13 @@ window.App = window.App || {};
       record: record,
       isNew: isNew,
     };
+
+    // Focus on the next tick so the browser's default focus handling for the
+    // originating click can't immediately blur the editor.
+    setTimeout(function () {
+      ta.focus();
+      ta.select();
+    }, 0);
 
     autoSize(ta);
     ta.addEventListener("input", function () { autoSize(ta); });
