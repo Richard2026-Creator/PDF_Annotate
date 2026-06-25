@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Annotator</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">PDF</span>
+      <span class="brand-name">Annotator</span>
+    </div>
+
+    <div class="file-actions">
+      <label class="btn btn-primary" for="file-input">
+        Open PDF
+      </label>
+      <input id="file-input" type="file" accept="application/pdf" hidden />
+      <span id="file-name" class="file-name"></span>
+    </div>
+
+    <div class="header-right">
+      <div class="zoom-controls">
+        <button id="zoom-out" class="btn btn-icon" title="Zoom out" disabled>&minus;</button>
+        <span id="zoom-level" class="zoom-level">100%</span>
+        <button id="zoom-in" class="btn btn-icon" title="Zoom in" disabled>+</button>
+      </div>
+      <button id="download-btn" class="btn btn-success" disabled>Download Annotated PDF</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <!-- Tool sidebar -->
+    <nav class="toolbar" aria-label="Annotation tools">
+      <button class="tool active" data-tool="select" title="Select / Move (V)">
+        <span class="tool-icon">&#8689;</span><span class="tool-label">Select</span>
+      </button>
+      <button class="tool" data-tool="text" title="Text (T)">
+        <span class="tool-icon">T</span><span class="tool-label">Text</span>
+      </button>
+      <button class="tool" data-tool="highlight" title="Highlight (H)">
+        <span class="tool-icon">&#9646;</span><span class="tool-label">Highlight</span>
+      </button>
+      <button class="tool" data-tool="rect" title="Rectangle (R)">
+        <span class="tool-icon">&#9633;</span><span class="tool-label">Rectangle</span>
+      </button>
+      <button class="tool" data-tool="ellipse" title="Circle / Ellipse (C)">
+        <span class="tool-icon">&#9711;</span><span class="tool-label">Circle</span>
+      </button>
+      <button class="tool" data-tool="line" title="Line — hold Shift for H/V (L)">
+        <span class="tool-icon">&#9585;</span><span class="tool-label">Line</span>
+      </button>
+      <button class="tool" data-tool="hline" title="Horizontal line">
+        <span class="tool-icon">&#8211;</span><span class="tool-label">H-Line</span>
+      </button>
+      <button class="tool" data-tool="vline" title="Vertical line">
+        <span class="tool-icon">&#65372;</span><span class="tool-label">V-Line</span>
+      </button>
+      <button class="tool" data-tool="arrow" title="Arrow (A)">
+        <span class="tool-icon">&#8594;</span><span class="tool-label">Arrow</span>
+      </button>
+
+      <div class="toolbar-divider"></div>
+
+      <button id="undo-btn" class="tool" title="Undo (Ctrl+Z)" disabled>
+        <span class="tool-icon">&#8634;</span><span class="tool-label">Undo</span>
+      </button>
+      <button id="redo-btn" class="tool" title="Redo (Ctrl+Y)" disabled>
+        <span class="tool-icon">&#8635;</span><span class="tool-label">Redo</span>
+      </button>
+      <button id="delete-btn" class="tool" title="Delete selected (Del)" disabled>
+        <span class="tool-icon">&#128465;</span><span class="tool-label">Delete</span>
+      </button>
+    </nav>
+
+    <!-- Document viewport -->
+    <main id="viewer" class="viewer">
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">&#128196;</div>
+        <h2>Open a PDF to start annotating</h2>
+        <p>Drag &amp; drop a PDF here, or click <strong>Open PDF</strong> above.</p>
+        <p class="empty-hint">Everything stays in your browser &mdash; nothing is uploaded to a server.</p>
+      </div>
+      <div id="pages" class="pages"></div>
+    </main>
+
+    <!-- Properties panel -->
+    <aside class="properties" aria-label="Annotation properties">
+      <h3 class="properties-title">Properties</h3>
+
+      <div class="prop-group">
+        <label class="prop-label">Color</label>
+        <div class="swatches" id="color-swatches"></div>
+        <input type="color" id="color-input" class="color-input" value="#e53935" />
+      </div>
+
+      <div class="prop-group" id="stroke-group">
+        <label class="prop-label" for="stroke-input">Stroke width: <span id="stroke-value">2</span>px</label>
+        <input type="range" id="stroke-input" min="1" max="20" value="2" />
+      </div>
+
+      <div class="prop-group" id="opacity-group">
+        <label class="prop-label" for="opacity-input">Opacity: <span id="opacity-value">100</span>%</label>
+        <input type="range" id="opacity-input" min="10" max="100" value="100" />
+      </div>
+
+      <div class="prop-group" id="fill-group">
+        <label class="prop-check">
+          <input type="checkbox" id="fill-input" /> Fill shape
+        </label>
+      </div>
+
+      <div class="prop-group" id="font-group">
+        <label class="prop-label" for="font-input">Font size: <span id="font-value">16</span>px</label>
+        <input type="range" id="font-input" min="8" max="72" value="16" />
+      </div>
+
+      <div class="prop-hint" id="prop-hint">
+        Pick a tool, then draw on the page. Use <strong>Select</strong> to move or delete items.
+      </div>
+    </aside>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <p id="loading-text">Loading…</p>
+  </div>
+
+  <!-- Libraries (loaded from CDN; run in the browser) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+  <!-- App modules (classic scripts, ordered) -->
+  <script src="js/store.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/exporter.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
