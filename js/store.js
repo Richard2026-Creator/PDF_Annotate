@@ -17,7 +17,7 @@ window.App = window.App || {};
   // ---- Default tool/style settings ----
   var settings = {
     tool: "select",
-    color: "#e53935",
+    color: "#000000",
     strokeWidth: 2,
     opacity: 1, // 0..1
     fill: false,
