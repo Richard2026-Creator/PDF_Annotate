@@ -63,6 +63,9 @@ window.App = window.App || {};
   function startShapeCreate(tool, record, pt) {
     var start = { x: pt.x, y: pt.y };
 
+    // Pressing on the canvas to start a new shape deselects any current item.
+    store.setSelected(null);
+
     drag = {
       mode: "create",
       tool: tool,
@@ -323,6 +326,7 @@ window.App = window.App || {};
   // ---- Text ----------------------------------------------------------------
 
   function startTextCreate(record, pt) {
+    store.setSelected(null);
     var ann = {
       id: store.uid(),
       type: "text",
