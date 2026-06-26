@@ -64,6 +64,13 @@
 
       <div class="toolbar-divider"></div>
 
+      <button id="image-btn" class="tool" title="Add an image (PNG or JPEG)" disabled>
+        <span class="tool-icon">&#128247;</span><span class="tool-label">Image</span>
+      </button>
+      <input id="image-input" type="file" accept="image/png,image/jpeg" hidden />
+
+      <div class="toolbar-divider"></div>
+
       <button id="undo-btn" class="tool" title="Undo (Ctrl+Z)" disabled>
         <span class="tool-icon">&#8634;</span><span class="tool-label">Undo</span>
       </button>
@@ -134,10 +141,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
   <!-- App modules (classic scripts, ordered) -->
-  <script src="js/store.js?v=5"></script>
-  <script src="js/renderer.js?v=5"></script>
-  <script src="js/tools.js?v=5"></script>
-  <script src="js/exporter.js?v=5"></script>
-  <script src="js/main.js?v=5"></script>
+  <script src="js/store.js?v=6"></script>
+  <script src="js/renderer.js?v=6"></script>
+  <script src="js/tools.js?v=6"></script>
+  <script src="js/exporter.js?v=6"></script>
+  <script src="js/main.js?v=6"></script>
 </body>
 </html>

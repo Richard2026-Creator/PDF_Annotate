@@ -41,11 +41,21 @@ window.App = window.App || {};
       var pages = pdfDoc.getPages();
 
       var anns = store.annotations();
+
+      // Pre-embed all images (async) and cache by data URL.
+      var imageCache = {};
+      for (var k = 0; k < anns.length; k++) {
+        var im = anns[k];
+        if (im.type === "image" && !imageCache[im.src]) {
+          imageCache[im.src] = await embedImage(pdfDoc, im.src);
+        }
+      }
+
       anns.forEach(function (a) {
         var page = pages[a.page];
         if (!page) return;
         var H = page.getSize().height;
-        drawAnnotation(page, a, H, font);
+        drawAnnotation(page, a, H, font, imageCache);
       });
 
       var bytes = await pdfDoc.save();
@@ -58,11 +68,24 @@ window.App = window.App || {};
     }
   }
 
-  function drawAnnotation(page, a, H, font) {
+  function drawAnnotation(page, a, H, font, imageCache) {
     var PDFLib = window.PDFLib;
     var color = hexToRgb(a.color);
     var sw = a.strokeWidth || 2;
     var op = a.opacity == null ? 1 : a.opacity;
+
+    if (a.type === "image") {
+      var embedded = imageCache && imageCache[a.src];
+      if (!embedded) return;
+      var iw = Math.abs(a.x2 - a.x1);
+      var ih = Math.abs(a.y2 - a.y1);
+      var ix = Math.min(a.x1, a.x2);
+      var iyTop = Math.min(a.y1, a.y2);
+      page.drawImage(embedded, {
+        x: ix, y: H - (iyTop + ih), width: iw, height: ih, opacity: op,
+      });
+      return;
+    }
 
     if (a.type === "highlight") {
       var hw = Math.abs(a.x2 - a.x1);
@@ -130,6 +153,19 @@ window.App = window.App || {};
     var p2 = { x: tipx - len * Math.cos(angle + spread), y: tipy - len * Math.sin(angle + spread) };
     page.drawLine({ start: { x: tipx, y: tipy }, end: p1, thickness: sw, color: color, opacity: op });
     page.drawLine({ start: { x: tipx, y: tipy }, end: p2, thickness: sw, color: color, opacity: op });
+  }
+
+  // Embed a PNG/JPEG data URL into the pdf-lib document.
+  async function embedImage(pdfDoc, dataUrl) {
+    try {
+      if (/^data:image\/png/i.test(dataUrl)) {
+        return await pdfDoc.embedPng(dataUrl);
+      }
+      return await pdfDoc.embedJpg(dataUrl);
+    } catch (e) {
+      console.error("Failed to embed image", e);
+      return null;
+    }
   }
 
   function outName(name) {

@@ -170,6 +170,27 @@ window.App = window.App || {};
     return { x: p.x, y: p.y };
   }
 
+  // Return the page record currently most visible in the viewer (for placing
+  // new content like images on the page the user is looking at).
+  function getCurrentPageRecord() {
+    if (!pageRecords.length) return null;
+    var viewer = el("viewer");
+    var vr = viewer.getBoundingClientRect();
+    var best = null;
+    var bestVisible = -1;
+    pageRecords.forEach(function (rec) {
+      var r = rec.wrapper.getBoundingClientRect();
+      var top = Math.max(r.top, vr.top);
+      var bottom = Math.min(r.bottom, vr.bottom);
+      var visible = Math.max(0, bottom - top);
+      if (visible > bestVisible) {
+        bestVisible = visible;
+        best = rec;
+      }
+    });
+    return best || pageRecords[0];
+  }
+
   // ---- Annotation drawing --------------------------------------------------
 
   function bbox(a) {
@@ -275,6 +296,18 @@ window.App = window.App || {};
       }));
     } else if (a.type === "arrow") {
       appendArrow(g, a, stroke, sw, op);
+    } else if (a.type === "image") {
+      var ib = bbox(a);
+      var img = svgEl("image", {
+        x: ib.x, y: ib.y, width: ib.w, height: ib.h,
+        preserveAspectRatio: "none",
+        opacity: op,
+        "pointer-events": "all",
+      });
+      // Set both modern and legacy hrefs for broad browser support.
+      img.setAttribute("href", a.src);
+      img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", a.src);
+      g.appendChild(img);
     } else if (a.type === "text") {
       appendText(g, a);
     }
@@ -407,6 +440,7 @@ window.App = window.App || {};
     loadPdf: loadPdf,
     setZoom: setZoom,
     clientToPage: clientToPage,
+    getCurrentPageRecord: getCurrentPageRecord,
     drawAnnotations: drawAnnotations,
     getPageRecords: function () { return pageRecords; },
     bbox: bbox,

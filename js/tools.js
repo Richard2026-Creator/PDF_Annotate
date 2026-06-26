@@ -471,5 +471,59 @@ window.App = window.App || {};
     bindPage: bindPage,
     commitEditor: commitEditor,
     isEditing: function () { return !!activeEditor; },
+    addImageFromFile: addImageFromFile,
   };
+
+  // ---- Images --------------------------------------------------------------
+
+  // Load a PNG/JPEG file, place it centered on the page the user is viewing,
+  // scaled to fit, and select it so it can be moved/resized immediately.
+  function addImageFromFile(file) {
+    if (!file) return;
+    if (!/^image\/(png|jpeg)$/.test(file.type)) {
+      alert("Please choose a PNG or JPEG image.");
+      return;
+    }
+    if (!store.doc.pdfDoc) {
+      alert("Open a PDF first, then add an image onto it.");
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      var src = reader.result; // data URL
+      var probe = new Image();
+      probe.onload = function () {
+        placeImage(src, probe.naturalWidth, probe.naturalHeight);
+      };
+      probe.onerror = function () { alert("That image could not be loaded."); };
+      probe.src = src;
+    };
+    reader.onerror = function () { alert("Could not read the image file."); };
+    reader.readAsDataURL(file);
+  }
+
+  function placeImage(src, natW, natH) {
+    var rec = App.renderer.getCurrentPageRecord();
+    if (!rec) return;
+
+    var pageW = rec.width, pageH = rec.height;
+    // Fit within ~60% of the page while preserving aspect ratio.
+    var maxW = pageW * 0.6, maxH = pageH * 0.6;
+    var ratio = Math.min(maxW / natW, maxH / natH, 1);
+    var w = Math.max(20, natW * ratio);
+    var h = Math.max(20, natH * ratio);
+    var x = (pageW - w) / 2;
+    var y = (pageH - h) / 2;
+
+    var id = store.addAnnotation({
+      type: "image",
+      page: rec.pageNum - 1,
+      x1: x, y1: y, x2: x + w, y2: y + h,
+      src: src,
+      opacity: 1,
+    });
+    store.setTool("select");
+    store.setSelected(id);
+  }
 })(window.App);

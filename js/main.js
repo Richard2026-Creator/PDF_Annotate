@@ -28,6 +28,8 @@
       case "vline":
       case "arrow":
         return { color: true, stroke: true, opacity: true, fill: false, font: false };
+      case "image":
+        return { color: false, stroke: false, opacity: true, fill: false, font: false };
       default: // select with nothing selected
         return { color: true, stroke: true, opacity: true, fill: true, font: true };
     }
@@ -71,6 +73,16 @@
       e.target.value = ""; // allow re-opening same file
     });
 
+    // Add image (PNG/JPEG)
+    $("image-btn").addEventListener("click", function () {
+      $("image-input").click();
+    });
+    $("image-input").addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (file) App.tools.addImageFromFile(file);
+      e.target.value = "";
+    });
+
     var viewer = $("viewer");
     ["dragenter", "dragover"].forEach(function (evt) {
       viewer.addEventListener(evt, function (e) {
@@ -106,6 +118,7 @@
     $("download-btn").disabled = false;
     $("zoom-in").disabled = false;
     $("zoom-out").disabled = false;
+    $("image-btn").disabled = false;
     updateZoomLabel();
   }
 
@@ -243,6 +256,7 @@
       select: "selection", text: "text box", highlight: "highlight",
       rect: "rectangle", ellipse: "circle", line: "line",
       hline: "horizontal line", vline: "vertical line", arrow: "arrow",
+      image: "image",
     };
     return map[type] || type;
   }
